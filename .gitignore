@@ -1,0 +1,8 @@
+*.root
+*.dat
+*.pcm
+*.so
+*.d
+data/
+*.pdf
+.DS_Store
