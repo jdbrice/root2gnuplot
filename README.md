@@ -35,6 +35,12 @@ examples:
     - Full output filename would be "data/SL_<name>.dat" where "<name>" is the ROOT object\'s name
     - TODO: support overriding formats per type
 
+example output:
+#converted from TH1 name: Acc0_idphi, file: ACO_STARLight_AuAu.root, date: 27-05-2021 10-50-05
+#x              y              xlow           xhigh          ylow           yhigh          
+ 0.078525       360820         0              0.15705        360219         361421       
+...
+
 ```
 
 

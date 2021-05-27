@@ -15,6 +15,7 @@
 #include <vector>
 #include <sstream>
 #include <cstdio>
+#include <iomanip> // c++11
 #include <cstdlib>
 using namespace std;
 
@@ -24,6 +25,7 @@ const int col_precision = 5;
 const std::string format_default_TH1 = "x y xlow xhigh ylow yhigh";
 const std::string format_default_TH2 = "x y z";
 const std::string format_default_TGraphErrors = "x y xlow xhigh ylow yhigh";
+
 
 class DataFileMaker {
     public:
@@ -103,7 +105,7 @@ class DataFileMaker {
         }
 
         // master convert for all histogram obects (TH1, TH2, TH3)
-        string convert( TH1 * h, string format, string fn) {
+        string convert( TH1 * h, string format, string fn, string meta = "") {
 
             std::ofstream tmp;
             
@@ -116,13 +118,13 @@ class DataFileMaker {
 
 
             if ( nullptr != h3 && h3->GetZaxis()->GetNbins() > 1 ){
-                tmp << "#converted from TH3" << endl;
+                tmp << "#converted from TH3 " << meta << endl;
                 convert_TH3( tmp, h3, format );
             } else if ( nullptr != h2 && h2->GetYaxis()->GetNbins() > 1 ){
-                tmp << "#converted from TH2" << endl;
+                tmp << "#converted from TH2 " << meta << endl;
                 convert_TH2( tmp, h2, format );
             } else {
-                tmp << "#converted from TH1" << endl;
+                tmp << "#converted from TH1 " << meta << endl;
                 convert_TH1( tmp, h, format );
             }
 
@@ -132,11 +134,11 @@ class DataFileMaker {
         }
 
         // master convert for all TGraph obects
-        string convert( TGraph * g, string format, string fn ) {
+        string convert( TGraph * g, string format, string fn, string meta = "" ) {
             std::ofstream tmp;
             tmp.open (fn, std::ofstream::out );
             
-            tmp << "#converted from TGraph" << endl;
+            tmp << "#converted from TGraph " << meta << endl;
             convert_TGraphErrors( tmp, g, format );
 
             tmp.flush();
@@ -301,14 +303,20 @@ void root2gnuplot( TString rootfile_hist = "", TString output = "out.dat", TStri
     }
 
     DataFileMaker dfm;
+    string metadata = "";
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    stringstream dtss;
+    dtss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
 
     if ( obj ){
+        metadata = "name: " + string(hfn.Data()) + ", file: " + string(rfn.Data()) + ", date: " + dtss.str();
         if ( dynamic_cast<TH1*>( obj ) ){
             cout << "Converting '" << hfn << "' as a histogram" << endl; 
-            dfm.convert( dynamic_cast<TH1*>( obj ), format.Data(), output.Data() );
+            dfm.convert( dynamic_cast<TH1*>( obj ), format.Data(), output.Data(), metadata );
         } else if ( dynamic_cast<TGraph*>( obj ) ){
             cout << "Converting '" << hfn << "' as a graph" << endl; 
-            dfm.convert( dynamic_cast<TGraph*>( obj ), format.Data(), output.Data() );
+            dfm.convert( dynamic_cast<TGraph*>( obj ), format.Data(), output.Data(), metadata );
         }
         return;
     }
@@ -320,14 +328,15 @@ void root2gnuplot( TString rootfile_hist = "", TString output = "out.dat", TStri
         while ( (key = (TKey*)next()) ) {
             TString loutput = TString::Format( "%s_%s.dat", output.Data(), key->GetName() );
             cout << "Converting " << key->GetName() << "[" << key->GetClassName() << "] into " << loutput << endl;
+            metadata = "name: " + string(key->GetName()) + ", file: " + string(rfn.Data()) + ", date: " + dtss.str();
             obj = rf->Get( key->GetName() );
             TGraph * g = dynamic_cast<TGraph*>( obj );
             TH1 * h = dynamic_cast<TH1*>( obj );
 
             if ( g != nullptr )
-                dfm.convert( g, format.Data(), loutput.Data() );
+                dfm.convert( g, format.Data(), loutput.Data(), metadata );
             else if ( h != nullptr ){
-                dfm.convert( h, format.Data(), loutput.Data() );
+                dfm.convert( h, format.Data(), loutput.Data(), metadata );
             }
         }
     }
